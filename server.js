@@ -1,12 +1,18 @@
+import https from "https";
+import fs from "fs";
+import { dirname, join } from "path";
+import { fileURLToPath } from "url";
 import express from "express";
 import cookieParser from "cookie-parser";
+
+let __filename = fileURLToPath(import.meta.url);
+let __dirname = dirname(__filename);
 
 let app = express();
 let port = 3000;
 
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(checkStorageAccessHeaders);
 
 // Routes
@@ -15,10 +21,15 @@ app.get("/storage-access", handleStorageAccessPage);
 app.get("/cookie", handleCookiePage);
 app.post("/cookie", handleCookiePost);
 
-app.listen(port, function () {
-  console.log(`Server running at http://localhost:${port}`);
+let key = fs.readFileSync(join(__dirname, "key.pem"));
+let cert = fs.readFileSync(join(__dirname, "cert.pem"));
+let server = https.createServer({ key, cert }, app);
+
+server.listen(port, () => {
+  console.log(`HTTPS server running at https://localhost:${port}`);
 });
 
+// Handlers
 function checkStorageAccessHeaders(req, res, next) {
   let url = new URL(`${req.protocol}://${req.get("host")}${req.originalUrl}`);
   let storageAccessHeader = req.get("sec-fetch-storage-access");
@@ -88,9 +99,9 @@ function handleStorageAccessPage(req, res) {
   try {
     let redirectURL = new URL(
       String(redirectParam),
-      `http://${req.headers.host}`
+      `${req.protocol}://${req.headers.host}`
     );
-    if (redirectURL.origin !== `http://${req.headers.host}`) {
+    if (redirectURL.origin !== `${req.protocol}://${req.headers.host}`) {
       return res.status(400).send("Invalid redirect URL");
     }
     if (req.query.embed == undefined) {
@@ -176,7 +187,10 @@ function handleCookiePost(req, res) {
 
   res.setHeader(
     "Set-Cookie",
-    `${name.replace(/=/g, "-")}=${value.replace(/=/g, "-")}; Path=/; HttpOnly`
+    `${name.replace(/=/g, "-")}=${value.replace(
+      /=/g,
+      "-"
+    )}; Path=/; SameSite=None; Secure; HttpOnly`
   );
   return res.redirect("/");
 }

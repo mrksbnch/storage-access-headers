@@ -20,7 +20,7 @@ app.listen(port, function () {
 });
 
 function checkStorageAccessHeaders(req, res, next) {
-  let url = new URL(req.protocol + "://" + req.get("host") + req.originalUrl);
+  let url = new URL(`${req.protocol}://${req.get("host")}${req.originalUrl}`);
   let storageAccessHeader = req.get("sec-fetch-storage-access");
 
   console.log("Storage Access Header Value", storageAccessHeader);
@@ -51,7 +51,6 @@ function checkStorageAccessHeaders(req, res, next) {
 }
 
 function handleHomePage(req, res) {
-  let url = req.protocol + "://" + req.get("host") + req.originalUrl;
   let isIframeScript = `
     <script>
       document.addEventListener("DOMContentLoaded", () => {
@@ -72,14 +71,13 @@ function handleHomePage(req, res) {
       });
     </script>
   `;
-  let cookieDisplay = JSON.stringify(req.cookies || {}, null, 2);
 
   res.send(`
     <html>
       <body>
         ${isIframeScript}
         <h2>Cookies</h2>
-        <pre>${cookieDisplay}</pre>
+        <pre>${JSON.stringify(req.cookies || {}, null, 2)}</pre>
       </body>
     </html>
   `);
@@ -172,7 +170,6 @@ function handleCookiePage(req, res) {
 function handleCookiePost(req, res) {
   let name = req.body.name;
   let value = req.body.value;
-
   if (typeof name !== "string" || typeof value !== "string") {
     return res.status(400).send("Invalid input");
   }

@@ -22,7 +22,8 @@ app.listen(port, function () {
 function checkStorageAccessHeaders(req, res, next) {
   let url = new URL(req.protocol + "://" + req.get("host") + req.originalUrl);
   let storageAccessHeader = req.get("sec-fetch-storage-access");
-  console.log("HERE", url.pathname, storageAccessHeader);
+
+  console.log("Storage Access Header Value", storageAccessHeader);
 
   if (!url.searchParams.has("embed") || url.pathname === "/storage-access") {
     return next();
@@ -95,7 +96,6 @@ function handleStorageAccessPage(req, res) {
       return res.status(400).send("Invalid redirect URL");
     }
     if (req.query.embed == undefined) {
-      console.log("REDIRECT STORAGE", req.query.embed);
       return res.redirect(redirectURL.toString());
     }
 
